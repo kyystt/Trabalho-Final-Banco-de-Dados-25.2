@@ -1,7 +1,5 @@
 from flask import Flask
-from src import db
-from src import api_bp
-from src import Config
+from src import db, api_bp, Config
 
 def create_app():
     app = Flask(__name__)
