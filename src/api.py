@@ -23,10 +23,10 @@ def get_agencias():
     except Exception as e:
         return jsonify({ "status": "error", "message":str(e) }), 500
 
-@api_bp.route('/paradas/<id>')
-def get_parada(id):
+@api_bp.route('/paradas/<id_parada>')
+def get_parada(id_parada):
     sql = text("SELECT * FROM Parada WHERE id_parada = :id")
-    result = db.session.execute(sql, {'id': id})
+    result = db.session.execute(sql, {'id': id_parada})
 
     paradas_list = [dict(row._mapping) for row in result]
 
@@ -45,12 +45,12 @@ def get_itinerario(id_viagem):
             pp.horario_entrada AS horario_chegada
         FROM Passa_por pp
         JOIN Parada p ON pp.id_parada = p.id_parada
-        WHERE pp.id_viagem = :id_viagem
+        WHERE pp.id_viagem = :id
         ORDER BY pp.indice_parada ASC
     """)
 
     try:
-        result = db.session.execute(sql, {'id_viagem': id_viagem})
+        result = db.session.execute(sql, {'id': id_viagem})
 
         itinerario = []
 
@@ -70,3 +70,40 @@ def get_itinerario(id_viagem):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@api_bp.route('/rotas/<id_rota>/shapes')
+def get_shape_by_route(id_rota):
+    sql = text("""
+        SELECT DISTINCT
+            S.id_shape,
+            S.ponto_lat, 
+            S.ponto_long,
+            S.indice_ponto
+        FROM Viagem V
+        JOIN Rota R ON V.id_rota = R.id_rota
+        JOIN Shape S ON V.id_shape = S.id_shape
+        WHERE R.id_rota = :id
+        ORDER BY S.id_shape, S.indice_ponto ASC
+    """)
+    
+    try: 
+        result = db.session.execute(sql, {'id': id_rota})
+
+        shapes = {}
+
+        for row in result:
+            shape_id = row.id_shape
+            if shape_id not in shapes:
+                shapes[shape_id] = []
+
+            shapes[shape_id].append({
+                "lat": float(row.ponto_lat),
+                "long": float(row.ponto_long),
+            })
+
+        if not shapes:
+            return jsonify({"message":"Shapes not found"}), 404
+
+        return jsonify(shapes)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
