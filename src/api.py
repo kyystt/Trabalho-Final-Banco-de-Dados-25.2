@@ -59,6 +59,52 @@ def get_viagem_detalhes(id_viagem):
     except Exception as e:
         return jsonify({"message": str(e)}), 500
 
+@api_bp.route('rotas/principais')
+def get_rotas_principais():
+
+    sql = text("""
+        WITH StatsViagem AS (
+            SELECT id_viagem, COUNT(id_parada) as qtd
+            FROM Passa_por
+            GROUP BY id_viagem
+        ),
+        MediaGlobal AS (
+            SELECT AVG(qtd) as valor_medio FROM StatsViagem
+        )
+        
+        SELECT 
+            r.onibus,
+            r.nome as nome_rota,
+            CAST(AVG(sv.qtd) AS UNSIGNED) as media_paradas_rota
+        FROM Rota r
+        JOIN Viagem v ON r.id_rota = v.id_rota
+        JOIN StatsViagem sv ON v.id_viagem = sv.id_viagem
+        GROUP BY r.id_rota, r.onibus, r.nome
+        HAVING media_paradas_rota > (SELECT valor_medio FROM MediaGlobal)
+        ORDER BY media_paradas_rota DESC
+        LIMIT 100;
+    """)
+
+    try:
+        result = db.session.execute(sql)
+        
+        rotas_longas = []
+
+        for row in result:
+            rotas_longas.append({
+                "linha": row.onibus,           
+                "nome_rota": row.nome_rota,    
+                "media_paradas": row.media_paradas_rota
+            })
+
+        if not rotas_longas:
+            return jsonify({"message": "Nenhuma rota encontrada acima da média"}), 404
+
+        return jsonify(rotas_longas)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @api_bp.route('/viagens/<id_viagem>/paradas')
 def get_itinerario(id_viagem):
     sql = text("""
@@ -132,6 +178,76 @@ def get_shape_by_route(id_rota):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@api_bp.route('rotas/<id_parada>')
+def get_rota_by_parada(id_parada):
+    sql = text("""SELECT * 
+               FROM Rota R
+               WHERE R.id_rota IN (
+                    SELECT 
+                        V.id_rota 
+                    FROM Viagem V 
+                    WHERE V.id_viagem IN (
+                        SELECT P.id_viagem 
+                        FROM Passa_por P 
+                        WHERE P.id_parada = :id))
+    """)
+
+    try:
+        result = db.session.execute(sql,{'id': id_parada})
+
+        rotas = []
+
+        for row in result:
+
+            rotas.append({
+                "id": row.id_rota,
+                "nome": row.nome,
+                "numero": row.onibus,
+                "id_agencia": row.id_agencia,
+                "is_brt": bool(row.modal_rota)
+            })
+
+        if not rotas:
+            return jsonify({"message": "Parada not found"}), 404
+
+        return jsonify(rotas)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api_bp.route('shape/<id_viagem>')
+def get_shape_by_viagem(id_viagem):
+    sql = text("""SELECT
+                    S.id_shape, 
+                    S.ponto_lat,
+                    S.ponto_long,
+                    S.indice_ponto
+               FROM Shape S
+               JOIN Viagem V ON V.id_shape = S.id_shape
+               WHERE V.id_viagem = :id
+               ORDER BY S.id_shape, S.indice_ponto ASC
+               """)
+
+    try:
+        result = db.session.execute(sql,{'id': id_viagem})
+
+        pontos = []
+
+        for row in result:
+
+            pontos.append({
+                "lat": float(row.ponto_lat),
+                "long": float(row.ponto_long),
+            })
+
+        if not pontos:
+            return jsonify({"message": "Shape not found"}), 404
+
+        return jsonify(pontos)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500    
+
 @api_bp.route('agencias')
 def get_agencias_overview():
     sql = text("""
@@ -161,6 +277,32 @@ def get_agencias_overview():
             return jsonify({"message": "Agencias not found"}), 404
 
         return jsonify(agencias)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@api_bp.route('rotas')
+def get_rotas_overview():
+    sql = text("SELECT * FROM Rota")
+
+    try:
+        result = db.session.execute(sql)
+
+        rotas = []
+
+        for row in result:
+            rotas.append({
+                "id": row.id_rota,
+                "nome": row.nome,
+                "numero": row.onibus,
+                "id_agencia": row.id_agencia,
+                "is_brt": bool(row.modal_rota)
+            })
+
+        if not rotas:
+            return jsonify({"message": "Rotas not found"}), 404
+
+        return jsonify(rotas)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
