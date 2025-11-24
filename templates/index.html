@@ -52,6 +52,57 @@
             width: 100%;
             background-color: #ddd; 
         }
+
+        /*Loader*/
+        #loader {
+            display: none; 
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            z-index: 2000; 
+            text-align: center;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        /*Animacao de girar*/
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db; 
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /*Legenda*/
+        .info.legend {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            line-height: 20px;
+            color: #555;
+            font-size: 14px;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.8;
+        }
     </style>
 </head>
 
@@ -71,6 +122,11 @@
         </header>
 
         <div id="map"></div>
+
+        <div id="loader">
+            <div class="spinner"></div>
+            Buscando dados...
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -89,6 +145,17 @@
         }).addTo(map);
 
         console.log("Mapa carregado com sucesso!");
+
+        var legend = L.control({position: 'bottomright'});
+
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info legend');
+            div.innerHTML += '<i style="background: #3388ff"></i> Rota (Shape)<br>';
+            div.innerHTML += '<i style="background: red; border-radius: 50%"></i> Paradas<br>';
+            return div;
+        };
+
+        legend.addTo(map);
     </script>
 
 </body>
