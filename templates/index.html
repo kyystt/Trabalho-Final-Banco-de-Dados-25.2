@@ -283,11 +283,122 @@
                 });
             });
 
+            // controle de camadas desenhadas (polyline / markers)
+            let currentPolyline = null;
+            let currentMarkers = [];
+
+            function clearMapDrawings() {
+                if (currentPolyline) {
+                    try { map.removeLayer(currentPolyline); } catch {}
+                    currentPolyline = null;
+                }
+                currentMarkers.forEach(m => {
+                    try { map.removeLayer(m); } catch {}
+                });
+                currentMarkers = [];
+            }
+
+            async function fetchAndDrawShape(id) {
+                if (!id) return;
+                if (loader) loader.style.display = 'block';
+                clearMapDrawings();
+
+                const candidates = [
+                    `/api/rotas/${encodeURIComponent(id)}/shapes`,
+                    `/api/shape/${encodeURIComponent(id)}`,
+                    `/api/shapes?rota=${encodeURIComponent(id)}`
+                ];
+
+                let data = null;
+                for (const url of candidates) {
+                    try {
+                        console.debug('Tentando', url);
+                        const res = await fetch(url);
+                        console.debug('Status', url, res.status);
+                        if (!res.ok) continue;
+                        data = await res.json();
+                        console.debug('Preview data', data && (Array.isArray(data) ? data.slice(0,3) : Object.keys(data).slice(0,5)));
+                        break;
+                    } catch (err) {
+                        console.warn('fetch falhou para', url, err);
+                    }
+                }
+
+                if (!data) {
+                    console.error('Nenhum shape retornado para a rota', id);
+                    if (loader) loader.style.display = 'none';
+                    return;
+                }
+
+                // Se a API retornou um objeto com variantes {key: [pts], ...}, pega a primeira array disponível
+                if (!Array.isArray(data) && typeof data === 'object' && data !== null) {
+                    const keys = Object.keys(data);
+                    for (const k of keys) {
+                        if (Array.isArray(data[k]) && data[k].length > 0) {
+                            console.debug('Usando variante de shape:', k);
+                            data = data[k];
+                            break;
+                        }
+                    }
+                }
+
+                // Normaliza vários formatos para [lat, lon]
+                let coords = (Array.isArray(data) ? data : []).map(p => {
+                    if (!p) return null;
+                    if (Array.isArray(p) && p.length >= 2) return normalizePair(p);
+                    // ADICIONADO p.long (estava faltando) antes de p.lon
+                    const lat = firstDefined(p.shape_pt_lat, p.ponto_lat, p.lat, p.latitude, p.lat_parada, p[0]);
+                    const lon = firstDefined(p.shape_pt_lon, p.ponto_long, p.long, p.lon, p.longitude, p.long_parada, p[1]);
+                    if (lat == null || lon == null) return null;
+                    return [Number(lat), Number(lon)];
+                }).filter(Boolean);
+
+                coords = coords.filter(c => Array.isArray(c) && isFinite(c[0]) && isFinite(c[1]));
+
+                console.debug('Coords normalizadas (exemplo):', coords.length, coords.slice(0,3));
+
+                if (coords.length === 0) {
+                    console.warn('Shape vazio ou formato inesperado para rota', id, data);
+                    if (loader) loader.style.display = 'none';
+                    return;
+                }
+
+                currentPolyline = L.polyline(coords, { color: '#3388ff', weight: 4, opacity: 0.9 }).addTo(map);
+
+                const start = coords[0];
+                const end = coords[coords.length - 1];
+                const startMark = L.circleMarker(start, { radius: 6, color: 'green', fillColor: 'green', fillOpacity: 0.9 }).bindPopup('Início').addTo(map);
+                const endMark = L.circleMarker(end, { radius: 6, color: 'red', fillColor: 'red', fillOpacity: 0.9 }).bindPopup('Fim').addTo(map);
+                currentMarkers.push(startMark, endMark);
+
+                try {
+                    map.fitBounds(currentPolyline.getBounds(), { padding: [40, 40] });
+                } catch (err) {
+                    map.setView(start, 13);
+                }
+
+                if (loader) loader.style.display = 'none';
+            }
+
+            // helpers
+            function firstDefined(...args) {
+                for (const a of args) if (a !== undefined && a !== null) return a;
+                return null;
+            }
+            function normalizePair(pair) {
+                const a = Number(pair[0]);
+                const b = Number(pair[1]);
+                if (!isFinite(a) || !isFinite(b)) return null;
+                // se primeiro for provavelmente longitude (|val| > 90) swap
+                if (Math.abs(a) > 90 && Math.abs(b) <= 90) return [b, a];
+                return [a, b];
+            }
+
             // evento de mudança (exemplo: futuro uso para carregar shape)
             select.addEventListener('change', (e) => {
                 const idRota = e.target.value;
                 console.log('Rota selecionada:', idRota);
-                // Exemplo: fetch(`/api/rotas/${idRota}/shapes`) ...
+                fetchAndDrawShape(idRota);
             });
         });
     </script>
