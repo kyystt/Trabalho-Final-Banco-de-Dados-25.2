@@ -306,3 +306,35 @@ def get_rotas_overview():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@api_bp.route('/agencias/rotas_count')
+def get_agencias_rotas_count():
+    sql = text("""
+        SELECT 
+            A.id_agencia,
+            A.nome,
+            COUNT(R.id_rota) as total_rotas
+        FROM Agencia A
+        LEFT JOIN Rota R ON A.id_agencia = R.id_agencia
+        GROUP BY A.id_agencia, A.nome
+        ORDER BY total_rotas DESC
+    """)
+
+    try:
+        result = db.session.execute(sql)
+
+        agencias_count = []
+        for row in result:
+            agencias_count.append({
+                "id": row.id_agencia,
+                "nome": row.nome,
+                "rotas_ativas": row.total_rotas
+            })
+
+        if not agencias_count:
+            return jsonify({"message": "Agencias nao foram encontradas"}), 404
+
+        return jsonify(agencias_count)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
