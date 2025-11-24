@@ -1,38 +1,29 @@
 import os
-from flask import Flask, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text
+from flask import Flask
+from src import db
+from src import api_bp
 
-app = Flask(__name__)
+def create_app():
+    app = Flask(__name__)
 
-db_url = os.environ.get('DATABASE_URL')
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-if not db_url:
-    exit()
+    db.init_app(app)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db = SQLAlchemy(app)
+    @app.route("/")
+    def index():
+        return '<p> OIIII </p>'
 
-@app.route("/")
-def check_connection():
-    try:
-        sql = text("SELECT * FROM Agencia LIMIT 5")
-        result = db.session.execute(sql)
+    @app.route("/health")
+    def health():
+        return 'SHALL THERE BE LIGHT!', 200
 
-        agencies = []
-        for row in result:
-            agencies.append(dict(row._mapping))
+    app.register_blueprint(api_bp, url_prefix='/api')
 
-        return jsonify({
-            "status": "success",
-            "message": "CONECTADO PORRA",
-            "data": agencies
-        })
-
-    except Exception as e:
-        return jsonify({ "status": "error", "message":str(e) }), 500
+    return app
 
 if __name__ == '__main__':
+    app = create_app()
     app.run(host='0.0.0.0', debug=True)
