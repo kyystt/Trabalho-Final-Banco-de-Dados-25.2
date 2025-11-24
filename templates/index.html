@@ -37,6 +37,21 @@
             z-index: 1000; 
         }
 
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: none;
+            min-width: 180px;
+            outline: none;
+        }
+
         /*O Seletor de Linhas*/
         select {
             padding: 10px;
@@ -114,6 +129,9 @@
                 <h3>Monitoramento de Ônibus</h3>
             </div>
             <div class="controls">
+                <!-- novos campos de Origem e Destino -->
+                <input id="input-origem" type="text" placeholder="Origem (ex: ponto, rua)..." aria-label="Origem">
+                <input id="input-destino" type="text" placeholder="Destino (ex: ponto, rua)..." aria-label="Destino">
                 <select id="seletor-rota">
                     <option value="" disabled selected>Selecione uma linha...</option>
                     <option value="teste">Aguardando API...</option>
@@ -156,7 +174,124 @@
         };
 
         legend.addTo(map);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const select = document.getElementById('seletor-rota');
+            const loader = document.getElementById('loader');
+            const origem = document.getElementById('input-origem');
+            const destino = document.getElementById('input-destino');
+
+            if (!select) return;
+
+            let rotasData = []; // guarda os dados originais para filtrar
+
+            function renderSelect(data) {
+                select.innerHTML = '';
+                if (!Array.isArray(data) || data.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.disabled = true;
+                    opt.selected = true;
+                    opt.textContent = 'Nenhuma rota encontrada';
+                    select.appendChild(opt);
+                    return;
+                }
+
+                // opção padrão
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.disabled = true;
+                defaultOpt.selected = true;
+                defaultOpt.textContent = 'Selecione uma linha...';
+                select.appendChild(defaultOpt);
+
+                data.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id_rota ?? item.id ?? item.codigo ?? item.value ?? '';
+                    opt.textContent = item.nome ?? item.name ?? item.label ?? (typeof item === 'string' ? item : JSON.stringify(item));
+                    select.appendChild(opt);
+                });
+            }
+
+            async function populateRotas() {
+                select.innerHTML = '<option value="">Carregando rotas...</option>';
+                if (loader) loader.style.display = 'block';
+
+                try {
+                    const res = await fetch('/api/rotas');
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const data = await res.json();
+
+                    rotasData = Array.isArray(data) ? data : [];
+
+                    renderSelect(rotasData);
+                } catch (err) {
+                    console.error('Erro ao carregar rotas:', err);
+                    select.innerHTML = '<option value="">Erro ao carregar rotas</option>';
+                } finally {
+                    if (loader) loader.style.display = 'none';
+                }
+            }
+
+            populateRotas();
+
+            // Função de filtro por origem/destino
+            function filterRotas() {
+                const o = (origem?.value || '').trim().toLowerCase();
+                const d = (destino?.value || '').trim().toLowerCase();
+
+                // se ambos vazios, mostra todas as linhas
+                if (!o && !d) {
+                    renderSelect(rotasData);
+                    return;
+                }
+
+                const filtered = rotasData.filter(item => {
+                    // tenta extrair nomes de paradas de várias formas possíveis
+                    const stops = item.paradas ?? item.stops ?? item.stops_list ?? [];
+                    const stopNames = Array.isArray(stops)
+                        ? stops.map(s => (s.nome ?? s.name ?? s.label ?? '').toString().toLowerCase())
+                        : [];
+
+                    const routeText = (item.nome ?? item.name ?? item.label ?? '').toString().toLowerCase();
+
+                    const hasOrigem = !o || routeText.includes(o) || stopNames.some(n => n.includes(o));
+                    const hasDestino = !d || routeText.includes(d) || stopNames.some(n => n.includes(d));
+
+                    // exige que ambos (quando preenchidos) sejam encontrados na mesma rota
+                    return hasOrigem && hasDestino;
+                });
+
+                renderSelect(filtered);
+            }
+
+            // ouvir mudanças nos campos
+            origem?.addEventListener('input', filterRotas);
+            destino?.addEventListener('input', filterRotas);
+
+            // Enter nos inputs seleciona a primeira opção correspondente
+            [origem, destino].forEach(el => {
+                el?.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const firstOption = select.querySelector('option:not([disabled])');
+                        if (firstOption && firstOption.value) {
+                            select.value = firstOption.value;
+                            select.dispatchEvent(new Event('change'));
+                        }
+                    }
+                });
+            });
+
+            // evento de mudança (exemplo: futuro uso para carregar shape)
+            select.addEventListener('change', (e) => {
+                const idRota = e.target.value;
+                console.log('Rota selecionada:', idRota);
+                // Exemplo: fetch(`/api/rotas/${idRota}/shapes`) ...
+            });
+        });
     </script>
 
 </body>
 </html>
+
