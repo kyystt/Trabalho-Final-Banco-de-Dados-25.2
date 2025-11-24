@@ -62,13 +62,13 @@ Em `src/`, temos a configuração do nosso banco de dados (e o arquivo de config
 ## A fazer 
 ### Lucas (Frontend)
 * Setup do Template
-    * [ ] Criar uma pasta templates na raiz do projeto (`/`) e um arquivo `index.html`
-    * [ ] Configurar o flask no `app.py` para renderizar esse template na rota 
+    * [X] Criar uma pasta templates na raiz do projeto (`/`) e um arquivo `index.html`
+    * [X] Configurar o flask no `app.py` para renderizar esse template na rota 
 * Container do Mapa (Leaflet.js + HTML)
-    * [ ] Criar uma div onde o mapa vai renderizar
-    * [ ] Centralizar a visualizacao inicial nas coordenadas do Rio de Janeiro
+    * [X] Criar uma div onde o mapa vai renderizar
+    * [X] Centralizar a visualizacao inicial nas coordenadas do Rio de Janeiro
 * Interface (Menu select)
-    * [ ] Criar um menu dropdown onde futuramente aparecerao os nomes das linhas de onibus
+    * [X] Criar um menu dropdown onde futuramente aparecerao os nomes das linhas de onibus
 
 ### Carlos Felipe (Integracao front + back)
 * [ ] Populacao do Dropdown
