@@ -62,8 +62,8 @@ Em `src/`, temos a configuração do nosso banco de dados (e o arquivo de config
 ## A fazer 
 ### Lucas (Frontend)
 * Setup do Template
-    * [ ] Criar uma pasta templates na raiz do projeto (`/`) e um arquivo `index.html`
-    * [ ] Configurar o flask no `app.py` para renderizar esse template na rota 
+    * [X] Criar uma pasta templates na raiz do projeto (`/`) e um arquivo `index.html`
+    * [X] Configurar o flask no `app.py` para renderizar esse template na rota 
 * Container do Mapa (Leaflet.js + HTML)
     * [ ] Criar uma div onde o mapa vai renderizar
     * [ ] Centralizar a visualizacao inicial nas coordenadas do Rio de Janeiro
