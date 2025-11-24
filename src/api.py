@@ -22,3 +22,15 @@ def get_agencias():
 
     except Exception as e:
         return jsonify({ "status": "error", "message":str(e) }), 500
+
+@api_bp.route('/paradas/<id>')
+def get_parada(id):
+    sql = text("SELECT * FROM Parada WHERE id_parada = :id")
+    result = db.session.execute(sql, {'id': id})
+    
+    paradas_list = [dict(row._mapping) for row in result]
+
+    if paradas_list:
+        return jsonify(paradas_list)
+    else:
+        return jsonify({"error": "Parada not found"}), 404
