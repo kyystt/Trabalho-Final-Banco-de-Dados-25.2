@@ -15,6 +15,7 @@ docker-compose up
 ## Estrutura do projeto
 <details>
 <summary>Ver a estrutura de arquivos</summary>
+
 ```
 .
 ├── Dockerfile
@@ -36,6 +37,7 @@ docker-compose up
     ├── api.py
     └── extensions.py
 ```
+
 </details>
 
 No diretório `dados/` temos todas as populações das nossas tabelas em arquivos `csv`, que é usado no script `load_data.sh`
