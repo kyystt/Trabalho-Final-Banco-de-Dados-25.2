@@ -333,3 +333,20 @@ def get_viagens_pontos_shape_count(id_viagem):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@api_bp.route('/viagens/media_paradas')
+def get_media_paradas_por_viagem():
+    sql = text("""
+        SELECT AVG(cnt) AS media_paradas FROM (
+            SELECT COUNT(*) AS cnt
+            FROM Passa_por
+            GROUP BY id_viagem
+        ) AS sub
+    """)
+    try:
+        result = db.session.execute(sql)
+        row = result.fetchone()
+        media = float(row.media_paradas) if row and row.media_paradas is not None else 0.0
+        return jsonify({"media_paradas_por_viagem": round(media, 2)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

@@ -79,7 +79,7 @@ Em `src/`, temos a configuração do nosso banco de dados (e o arquivo de config
     * No mesmo evento, deve chamar `/api/paradas/...` e usar um loop para adicionar `L.marker` no mapa para cada parada retornada
 * [X] Calcular quantos pontos de GPS (linhas na tabela Shape) cada viagem possui 
     * Agregacao (COUNT) + GROUP BY
-* [ ] Média global de paradas por viagem 
+* [X] Média global de paradas por viagem 
     * Agregacao (AVG)
 
 ### Rafael (Backend 1)
