@@ -95,5 +95,6 @@ Em `src/`, temos a configuração do nosso banco de dados (e o arquivo de config
 * [X] Obter as coordenadas (`lat/long`) para desenhar o Shape 
     * JOIN
     * Endpoint `/api/rotas/<id_rota>/shapes`
-* [ ] Listar todas as Agências cadastradas, inclusive as que nao possuem nenhuma rota ativa 
+* [X] Listar todas as Agências cadastradas, inclusive as que nao possuem nenhuma rota ativa 
     * LEFT JOIN
+    * Endpoint `/api/agencias`
