@@ -85,16 +85,15 @@ Em `src/`, temos a configuração do nosso banco de dados (e o arquivo de config
     * Agregacao (AVG)
 
 ### Rafael (Backend 1)
-* [ ] Endpoint de listagem (`/api/rotas`)
+* [X] Endpoint de listagem (`/api/rotas`)
     * Fazer um `SELECT` na tabela Rota e retornar um JSON
-* [ ] Endpoint de tracado (`/api/shape/<id_viagem>`)
+* [X] Endpoint de tracado (`/api/shape/<id_viagem>`)
     * Recebe o `id_viagem`, vai na tabela Shape e seleciona `ponto_lat, ponto_long` e ordena os resultados pelo campo `indice_ponto`
-* [ ] Listar apenas as rotas que passam por uma parada especifica famosa (ex.: "Candelária") 
+* [X] Listar apenas as rotas que passam por uma parada especifica famosa (ex.: "Candelária") 
     * Subconsulta Simples
-* [ ] Listar as viagens que têm um número de paradas acima da média 
-    * Subconsulta com Agragacao
-* [ ] Listar as Agências que operam apenas ônibus do tipo "BRT" (`modal_rota = true`)
-
+* [X] Listar as rotas que têm um número de paradas acima da média 
+    * Subconsulta com Agregacao
+    
 ### Guilherme (Backend 2)
 * [X] Endpoint de paradas (`/api/paradas/<id_viagem>`)
 * [X] Query `JOIN` entre as tabelas Viagem, Passa_por, Parada
