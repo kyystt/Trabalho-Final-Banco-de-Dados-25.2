@@ -71,8 +71,8 @@ Em `src/`, temos a configuração do nosso banco de dados (e o arquivo de config
     * [X] Criar um menu dropdown onde futuramente aparecerao os nomes das linhas de onibus
 
 ### Carlos Felipe (Integracao front + back)
-* [ ] Populacao do Dropdown
-    * [ ] Escrever um script JS no `index.html` que, ao carregar a pagina, faz um `fetch('/api/rotas')` e cria as `<option>` dentro do dropdown
+* [X] Populacao do Dropdown
+    * [X] Escrever um script JS no `index.html` que, ao carregar a pagina, faz um `fetch('/api/rotas')` e cria as `<option>` dentro do dropdown
 * [ ] Desenhando a linha (Adicionar um evento de change no dropdown)
     * Quando o usuario escolher uma linha, o JS deve limpar o mapa, chamar `/api/shape/...` e usar a funcao `L.polyline` do Leaflet para desenhar o trajeto colorido
 * [ ] Plotando as paradas
