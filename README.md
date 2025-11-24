@@ -1,5 +1,17 @@
 # Trabalho Final BD 25.1
 
+## Projeto final da matéria Organização de Dados, do curso de Ciência da Computação da turma 2024.1
+
+## Integrantes
+<a href="https://github.com/sobreira0/Trabalho-Final-Banco-De-Dados-25.2/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=sobreira0/Trabalho-Final-Banco-De-Dados-25.2" />
+</a>
+
+- Guilherme Vasconcellos Sobreira de Carvalho
+- Rafael Mello dos Santos
+- Lucas de Moraes Brandão
+- Carlos Felipe dos Santos 
+
 ## Como comecar a trabalhar?
 Primeiro, copie o arquivo `.env.example` para `.env`
 ```bash
