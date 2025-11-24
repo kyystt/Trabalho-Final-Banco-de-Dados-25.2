@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from src import db, api_bp, Config
 
 def create_app():
@@ -10,7 +10,7 @@ def create_app():
 
     @app.route("/")
     def index():
-        return '<p> OIIII </p>'
+        return render_template("index.html")
 
     @app.route("/health")
     def health():
