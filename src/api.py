@@ -18,6 +18,47 @@ def get_parada(id_parada):
     else:
         return jsonify({"error": "Parada not found"}), 404
 
+@api_bp.route('viagens/<id_viagem>')
+def get_viagem_detalhes(id_viagem):
+    sql = text("""
+        SELECT
+            A.nome AS nome_agencia,
+            R.nome AS nome_rota,
+            R.onibus AS numero_linha,
+            V.destino AS letreiro_destino,
+            P.nome AS nome_ponto_final
+        FROM Viagem V
+        JOIN Rota R on V.id_rota = R.id_rota
+        JOIN Agencia A ON R.id_agencia = A.id_agencia
+        JOIN Passa_por PP on V.id_viagem = PP.id_viagem
+        JOIN Parada P on PP.id_parada = P.id_parada
+        WHERE V.id_viagem = :id
+        ORDER BY PP.indice_parada DESC
+        LIMIT 1
+    """)
+
+    try:
+        result = db.session.execute(sql, {"id": id_viagem})
+
+        row = result.fetchone()
+
+        if not row:
+            return jsonify({"error": "Viagem not found"}), 404
+
+        data = dict(row._mapping)
+
+        return jsonify({
+            "agencia": data['nome_agencia'],
+            "rota": f"{data['numero_linha']} - {data['nome_rota']}",
+            "destino" : {
+                "letreiro": data['letreiro_destino'],
+                "ponto_final": data['nome_ponto_final']
+            }
+        })
+
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
 @api_bp.route('/viagens/<id_viagem>/paradas')
 def get_itinerario(id_viagem):
     sql = text("""

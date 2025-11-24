@@ -88,9 +88,10 @@ Em `src/`, temos a configuração do nosso banco de dados (e o arquivo de config
 * [X] Query `JOIN` entre as tabelas Viagem, Passa_por, Parada
     * Retorna um objeto JSON contendo `lat_parada, long_parada, nome (da parada), horario_chegada`
     * Endpoint `/api/viagens/<id_viagem>/paradas`
-* [ ] Recuperar `nome (da agencia), nome (da rota), destino da viagem, nome (da parada final)` 
+* [X] Recuperar `nome (da agencia), nome (da rota), destino da viagem, nome (da parada final)` 
     * Mostrar detalhes da viagem quando o usuário clica num ônibus
     * JOIN
+    * Endpoint `/api/viagens/<id_viagem>`
 * [X] Obter as coordenadas (`lat/long`) para desenhar o Shape 
     * JOIN
     * Endpoint `/api/rotas/<id_rota>/shapes`
