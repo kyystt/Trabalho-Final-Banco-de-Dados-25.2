@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 user="root"
 pass="$MYSQL_ROOT_PASSWORD"
