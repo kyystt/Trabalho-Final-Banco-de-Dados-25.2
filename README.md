@@ -12,6 +12,38 @@ Depois basta subir os containers
 docker-compose up
 ```
 
+## Estrutura do projeto
+<details>
+<summary>Ver a estrutura de arquivos</summary>
+```
+.
+├── Dockerfile
+├── README.md
+├── app.py
+├── dados/
+│   ├── agency.csv
+│   ├── routes.csv
+│   ├── shapes.csv
+│   ├── stop_times.csv
+│   ├── stops.csv
+│   └── trips.csv
+├── docker-compose.yml
+├── load_data.sh
+├── requirements.txt
+├── schema.sql
+└── src/
+    ├── __init__.py
+    ├── api.py
+    └── extensions.py
+```
+</details>
+
+No diretório `dados/` temos todas as populações das nossas tabelas em arquivos `csv`, que é usado no script `load_data.sh`
+
+Em `src/`, temos a configuração do nosso banco de dados junto com a parte da API
+
+`app.py` é o resto da aplicação, que serve algumas páginas estáticas como `/health`
+
 ## A fazer 
 ### Lucas (Frontend)
 * Setup do Template
