@@ -91,8 +91,6 @@ Em `src/`, temos a configuração do nosso banco de dados (e o arquivo de config
 * [ ] Recuperar `nome (da agencia), nome (da rota), destino da viagem, nome (da parada final)` 
     * Mostrar detalhes da viagem quando o usuário clica num ônibus
     * JOIN
-* [ ] Listar todas as paradas de uma Viagem específica
-    * JOIN
 * [ ] Obter as coordenadas (`lat/long`) para desenhar o Shape 
     * JOIN
 * [ ] Listar todas as Agências cadastradas, inclusive as que nao possuem nenhuma rota ativa 
