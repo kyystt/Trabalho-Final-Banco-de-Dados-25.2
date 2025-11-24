@@ -350,3 +350,40 @@ def get_media_paradas_por_viagem():
         return jsonify({"media_paradas_por_viagem": round(media, 2)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@api_bp.route('/rotas/<id_rota>/paradas')
+def get_paradas_by_rota(id_rota):
+    sql = text("""
+        SELECT
+            p.id_parada,
+            p.nome,
+            p.lat_parada,
+            p.long_parada,
+            MIN(pp.indice_parada) AS primeiro_indice
+        FROM Parada p
+        JOIN Passa_por pp ON p.id_parada = pp.id_parada
+        JOIN Viagem v ON pp.id_viagem = v.id_viagem
+        WHERE v.id_rota = :id
+        GROUP BY p.id_parada, p.nome, p.lat_parada, p.long_parada
+        ORDER BY primeiro_indice ASC
+    """)
+    try:
+        result = db.session.execute(sql, {'id': id_rota})
+        paradas = []
+        for row in result:
+            m = row._mapping
+            paradas.append({
+                "id_parada": m.get('id_parada'),
+                "nome": m.get('nome'),
+                "lat": float(m.get('lat_parada')) if m.get('lat_parada') is not None else None,
+                "long": float(m.get('long_parada')) if m.get('long_parada') is not None else None,
+                "primeiro_indice": int(m.get('primeiro_indice')) if m.get('primeiro_indice') is not None else None
+            })
+
+        if not paradas:
+            return jsonify({"message": "Nenhuma parada encontrada para essa rota"}), 404
+
+        return jsonify(paradas)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
