@@ -26,7 +26,7 @@ FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
-(id_parada, @dummy, nome, lat_parada, long_parada);
+(id_parada, @dummy, nome, @dummy, lat_parada, long_parada);
 
 -- 3. Carregando Shape
 LOAD DATA LOCAL INFILE '$csv_dir/shapes.csv'
@@ -52,7 +52,7 @@ LOAD DATA LOCAL INFILE '$csv_dir/trips.csv'
 INTO TABLE \`Viagem\`
 FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
+LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
 (id_viagem, id_rota, @dummy, destino, @dummy, tipo, id_shape);
 

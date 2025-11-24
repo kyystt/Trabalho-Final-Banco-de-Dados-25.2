@@ -96,15 +96,17 @@ Em `src/`, temos a configuração do nosso banco de dados (e o arquivo de config
 * [ ] Listar as Agências que operam apenas ônibus do tipo "BRT" (`modal_rota = true`)
 
 ### Guilherme (Backend 2)
-* [ ] Endpoint de paradas (`/api/paradas/<id_viagem>`)
-* [ ] Query `JOIN` entre as tabelas Viagem, Passa_por, Parada
+* [X] Endpoint de paradas (`/api/paradas/<id_viagem>`)
+* [X] Query `JOIN` entre as tabelas Viagem, Passa_por, Parada
     * Retorna um objeto JSON contendo `lat_parada, long_parada, nome (da parada), horario_chegada`
-* [ ] Recuperar `nome (da agencia), nome (da rota), destino da viagem, nome (da parada final)` 
+    * Endpoint `/api/viagens/<id_viagem>/paradas`
+* [X] Recuperar `nome (da agencia), nome (da rota), destino da viagem, nome (da parada final)` 
     * Mostrar detalhes da viagem quando o usuário clica num ônibus
     * JOIN
-* [ ] Listar todas as paradas de uma Viagem específica
+    * Endpoint `/api/viagens/<id_viagem>`
+* [X] Obter as coordenadas (`lat/long`) para desenhar o Shape 
     * JOIN
-* [ ] Obter as coordenadas (`lat/long`) para desenhar o Shape 
-    * JOIN
-* [ ] Listar todas as Agências cadastradas, inclusive as que nao possuem nenhuma rota ativa 
+    * Endpoint `/api/rotas/<id_rota>/shapes`
+* [X] Listar todas as Agências cadastradas, inclusive as que nao possuem nenhuma rota ativa 
     * LEFT JOIN
+    * Endpoint `/api/agencias`
