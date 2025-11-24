@@ -77,9 +77,7 @@ Em `src/`, temos a configuração do nosso banco de dados (e o arquivo de config
     * Quando o usuario escolher uma linha, o JS deve limpar o mapa, chamar `/api/shape/...` e usar a funcao `L.polyline` do Leaflet para desenhar o trajeto colorido
 * [ ] Plotando as paradas
     * No mesmo evento, deve chamar `/api/paradas/...` e usar um loop para adicionar `L.marker` no mapa para cada parada retornada
-* [ ] Contar quantas rotas cada agência opera, ordenando do maior para a menor 
-    * Agregacao (COUNT) + GROUP BY
-* [ ] Calcular quantos pontos de GPS (linhas na tabela Shape) cada viagem possui 
+* [X] Calcular quantos pontos de GPS (linhas na tabela Shape) cada viagem possui 
     * Agregacao (COUNT) + GROUP BY
 * [ ] Média global de paradas por viagem 
     * Agregacao (AVG)

@@ -306,35 +306,30 @@ def get_rotas_overview():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-@api_bp.route('/agencias/rotas_count')
-def get_agencias_rotas_count():
+    
+@api_bp.route('/viagens/<id_viagem>/pontos_shape_count')
+def get_viagens_pontos_shape_count(id_viagem):
     sql = text("""
         SELECT 
-            A.id_agencia,
-            A.nome,
-            COUNT(R.id_rota) as total_rotas
-        FROM Agencia A
-        LEFT JOIN Rota R ON A.id_agencia = R.id_agencia
-        GROUP BY A.id_agencia, A.nome
-        ORDER BY total_rotas DESC
+            V.id_viagem,
+            COUNT(S.id_shape) AS total_pontos_gps
+        FROM Viagem V
+        LEFT JOIN Shape S ON V.id_shape = S.id_shape
+        WHERE V.id_viagem = :id
+        GROUP BY V.id_viagem
     """)
 
     try:
-        result = db.session.execute(sql)
+        result = db.session.execute(sql, {'id': id_viagem})
+        row = result.fetchone()
 
-        agencias_count = []
-        for row in result:
-            agencias_count.append({
-                "id": row.id_agencia,
-                "nome": row.nome,
-                "rotas_ativas": row.total_rotas
-            })
+        if not row:
+            return jsonify({"message": "Viagem not found"}), 404
 
-        if not agencias_count:
-            return jsonify({"message": "Agencias nao foram encontradas"}), 404
-
-        return jsonify(agencias_count)
+        return jsonify({
+            "id_viagem": row.id_viagem,
+            "total_pontos_gps": int(row.total_pontos_gps)
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
