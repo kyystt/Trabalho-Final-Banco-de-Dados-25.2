@@ -131,3 +131,36 @@ def get_shape_by_route(id_rota):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@api_bp.route('agencias')
+def get_agencias_overview():
+    sql = text("""
+        SELECT 
+            A.id_agencia,
+            A.nome,
+            COUNT(R.id_rota) as total_rotas
+        FROM Agencia A
+        LEFT JOIN Rota R ON A.id_agencia = R.id_agencia
+        GROUP BY A.id_agencia, A.nome
+        ORDER BY total_rotas DESC
+    """)
+
+    try:
+        result = db.session.execute(sql)
+
+        agencias = []
+
+        for row in result:
+            agencias.append({
+                "id": row.id_agencia,
+                "nome": row.nome,
+                "rotas_ativas": row.total_rotas
+            })
+
+        if not agencias:
+            return jsonify({"message": "Agencias not found"}), 404
+
+        return jsonify(agencias)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
