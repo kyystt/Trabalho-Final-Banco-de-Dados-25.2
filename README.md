@@ -21,7 +21,7 @@ docker-compose up
 ├── Dockerfile
 ├── README.md
 ├── app.py
-├── dados/
+├── dados
 │   ├── agency.csv
 │   ├── routes.csv
 │   ├── shapes.csv
@@ -32,9 +32,10 @@ docker-compose up
 ├── load_data.sh
 ├── requirements.txt
 ├── schema.sql
-└── src/
+└── src
     ├── __init__.py
     ├── api.py
+    ├── config.py
     └── extensions.py
 ```
 
@@ -42,7 +43,7 @@ docker-compose up
 
 No diretório `dados/` temos todas as populações das nossas tabelas em arquivos `csv`, que é usado no script `load_data.sh`
 
-Em `src/`, temos a configuração do nosso banco de dados junto com a parte da API
+Em `src/`, temos a configuração do nosso banco de dados (e o arquivo de configuração) e a API
 
 `app.py` é o resto da aplicação, que serve algumas páginas estáticas como `/health`
 

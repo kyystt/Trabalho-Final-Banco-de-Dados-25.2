@@ -1,16 +1,14 @@
-import os
 from flask import Flask
 from src import db
 from src import api_bp
+from src import Config
 
 def create_app():
     app = Flask(__name__)
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config.from_object(Config)
 
     db.init_app(app)
-
 
     @app.route("/")
     def index():
