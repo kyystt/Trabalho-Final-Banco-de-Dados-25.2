@@ -369,15 +369,15 @@ def get_paradas_by_rota(id_rota):
     """)
     try:
         result = db.session.execute(sql, {'id': id_rota})
+
         paradas = []
         for row in result:
-            m = row._mapping
             paradas.append({
-                "id_parada": m.get('id_parada'),
-                "nome": m.get('nome'),
-                "lat": float(m.get('lat_parada')) if m.get('lat_parada') is not None else None,
-                "long": float(m.get('long_parada')) if m.get('long_parada') is not None else None,
-                "primeiro_indice": int(m.get('primeiro_indice')) if m.get('primeiro_indice') is not None else None
+                "id_parada": row.id_parada,
+                "nome": row.nome,
+                "lat": float(row.lat_parada),
+                "long": float(row.long_parada), 
+                "primeiro_indice": int(row.primeiro_indice)
             })
 
         if not paradas:
