@@ -306,3 +306,110 @@ def get_rotas_overview():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@api_bp.route('/viagens/<id_viagem>/pontos_shape_count')
+def get_viagens_pontos_shape_count(id_viagem):
+    sql = text("""
+        SELECT 
+            V.id_viagem,
+            COUNT(S.id_shape) AS total_pontos_gps
+        FROM Viagem V
+        LEFT JOIN Shape S ON V.id_shape = S.id_shape
+        WHERE V.id_viagem = :id
+        GROUP BY V.id_viagem
+    """)
+
+    try:
+        result = db.session.execute(sql, {'id': id_viagem})
+        row = result.fetchone()
+
+        if not row:
+            return jsonify({"message": "Viagem not found"}), 404
+
+        return jsonify({
+            "id_viagem": row.id_viagem,
+            "total_pontos_gps": int(row.total_pontos_gps)
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@api_bp.route('/viagens/media_paradas')
+def get_media_paradas_por_viagem():
+    sql = text("""
+        SELECT AVG(cnt) AS media_paradas FROM (
+            SELECT COUNT(*) AS cnt
+            FROM Passa_por
+            GROUP BY id_viagem
+        ) AS sub
+    """)
+    try:
+        result = db.session.execute(sql)
+        row = result.fetchone()
+        media = float(row.media_paradas) if row and row.media_paradas is not None else 0.0
+        return jsonify({"media_paradas_por_viagem": round(media, 2)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@api_bp.route('/rotas/<id_rota>/paradas')
+def get_paradas_by_rota(id_rota):
+    sql = text("""
+        SELECT
+            v.id_shape,
+            p.id_parada,
+            p.nome,
+            p.lat_parada,
+            p.long_parada,
+            MIN(pp.indice_parada) AS primeiro_indice
+        FROM Parada p
+        JOIN Passa_por pp ON p.id_parada = pp.id_parada
+        JOIN Viagem v ON pp.id_viagem = v.id_viagem
+        WHERE v.id_rota = :id
+        GROUP BY v.id_shape, p.id_parada, p.nome, p.lat_parada, p.long_parada
+        ORDER BY v.id_shape, primeiro_indice ASC
+    """)
+    try:
+        result = db.session.execute(sql, {'id': id_rota})
+
+        paradas_por_shape = {}
+
+        for row in result:
+            shape_id = row.id_shape
+            if shape_id not in paradas_por_shape:
+                paradas_por_shape[shape_id] = []
+
+            paradas_por_shape[shape_id].append({
+                "id_parada": row.id_parada,
+                "nome": row.nome,
+                "lat": float(row.lat_parada),
+                "long": float(row.long_parada),
+                "primeiro_indice": int(row.primeiro_indice)
+            })
+
+        if not paradas_por_shape:
+            return jsonify({"message": "Nenhuma parada encontrada para essa rota"}), 404
+
+        return jsonify(paradas_por_shape)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api_bp.route('/rotas/<id_rota>/viagens')
+def get_viagens_da_rota(id_rota):
+    sql = text("""
+        SELECT
+            id_viagem,
+            id_shape
+        FROM Viagem
+        WHERE id_rota = :id
+    """)
+    result = db.session.execute(sql, {'id': id_rota})
+
+    viagens = []
+    for row in result:
+        viagens.append({
+            "id_viagem": row.id_viagem,
+            "id_shape": row.id_shape
+        })
+
+    return jsonify(viagens)

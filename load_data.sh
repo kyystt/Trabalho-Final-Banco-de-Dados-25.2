@@ -42,7 +42,7 @@ LOAD DATA LOCAL INFILE '$csv_dir/routes.csv'
 INTO TABLE \`Rota\`
 FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
-LINES TERMINATED BY '\r\n'
+LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 (id_rota, id_agencia, onibus, nome, @modal_var)
 SET modal_rota = IF(@modal_var = 'BRT', TRUE, FALSE);
@@ -52,7 +52,7 @@ LOAD DATA LOCAL INFILE '$csv_dir/trips.csv'
 INTO TABLE \`Viagem\`
 FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
-LINES TERMINATED BY '\r\n'
+LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 (id_viagem, id_rota, @dummy, destino, @dummy, tipo, id_shape);
 
@@ -61,7 +61,7 @@ LOAD DATA LOCAL INFILE '$csv_dir/stop_times.csv'
 INTO TABLE \`Passa_por\`
 FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
-LINES TERMINATED BY '\r\n'
+LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 (id_viagem, indice_parada, id_parada, horario_entrada, horario_saida);
 
