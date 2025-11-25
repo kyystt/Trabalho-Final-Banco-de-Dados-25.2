@@ -3,453 +3,521 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoramento de Ônibus - Rio de Janeiro</title>
+    <title>RioBus Analytics</title>
     
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-     crossorigin=""/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        :root {
+            --primary: #2563eb;    
+            --accent: #3b82f6;        
+            --surface: rgba(255, 255, 255, 0.95);
+            --text-main: #1e293b;
+            --text-light: #64748b;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
         }
 
-        .container {
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; 
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .dashboard-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 320px;
+            background: var(--surface);
+            backdrop-filter: blur(10px); 
+            padding: 24px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            z-index: 1000; 
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            gap: 15px;
+            transition: all 0.3s ease;
         }
 
-        header {
-            background-color: #2c3e50; 
-            color: white;
-            padding: 15px;
+        .logo h3 {
+            margin: 0;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 1.2rem;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            z-index: 1000; 
+            gap: 8px;
         }
 
-        .controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
 
-        input[type="text"] {
-            padding: 10px;
-            font-size: 14px;
-            border-radius: 5px;
-            border: none;
-            min-width: 180px;
-            outline: none;
-        }
-
-        select {
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: none;
-            min-width: 250px;
-        }
-
-        #map { 
-            flex-grow: 1; 
+        input[type="text"], select {
             width: 100%;
-            background-color: #ddd; 
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #f8fafc;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box; 
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
         }
 
         #loader {
-            display: none; 
-            position: absolute;
-            top: 50%;
+            display: none;
+            position: fixed;
+            top: 20px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
-            z-index: 2000; 
-            text-align: center;
-            font-weight: bold;
-            color: #2c3e50;
+            transform: translateX(-50%);
+            background: var(--text-main);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: var(--shadow);
+            z-index: 2000;
+            align-items: center;
+            gap: 10px;
         }
 
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db; 
+        .spinner-mini {
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid #fff;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
             animation: spin 1s linear infinite;
-            margin: 10px auto;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        #modal-stats {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); 
+            backdrop-filter: blur(4px);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        #modal-stats.visible {
+            opacity: 1;
+        }
+
+        .modal-card {
+            background: white;
+            width: 90%; max-width: 600px;
+            max-height: 85vh;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            overflow-y: auto;
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #modal-stats.visible .modal-card {
+            transform: scale(1);
         }
 
         .info.legend {
             background: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
-            line-height: 20px;
-            color: #555;
-            font-size: 14px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 12px;
+            color: var(--text-light);
+            border: 1px solid #e2e8f0;
         }
         .legend i {
-            width: 18px;
-            height: 18px;
-            float: left;
-            margin-right: 8px;
-            opacity: 0.8;
+            width: 10px; height: 10px;
+            display: inline-block;
+            margin-right: 5px;
+            border-radius: 2px;
         }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
     </style>
 </head>
 
 <body>
 
-    <div class="container">
-        <header>
-            <div class="logo">
-                <h3>Monitoramento de Ônibus</h3>
-            </div>
-            <div class="controls">
-                <input id="input-origem" type="text" placeholder="Origem (ex: ponto, rua)..." aria-label="Origem">
-                <input id="input-destino" type="text" placeholder="Destino (ex: ponto, rua)..." aria-label="Destino">
-                <select id="seletor-rota">
-                    <option value="" disabled selected>Selecione uma linha...</option>
-                    <option value="teste">Aguardando API...</option>
-                </select>
-            </div>
-        </header>
+    <div id="map"></div>
 
-        <div id="map"></div>
+    <div class="dashboard-panel">
+        <div class="logo">
+            <h3>RioBus <span style="font-weight:400; font-size: 0.9em; color:#64748b">Analytics</span></h3>
+        </div>
 
-        <div id="loader">
-            <div class="spinner"></div>
-            Buscando dados...
+        <div style="border-bottom: 1px solid #e2e8f0; margin-bottom: 5px;"></div>
+
+        <label style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: -10px;">FILTRAR</label>
+        <input id="input-origem" type="text" placeholder="Origem...">
+        <input id="input-destino" type="text" placeholder="Destino...">
+        
+        <label style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: -10px;">SELECIONAR ROTA</label>
+        <select id="seletor-rota">
+            <option value="" disabled selected>Escolha uma linha...</option>
+            <option value="teste">Aguardando API...</option>
+        </select>
+
+        <button id="btn-stats" class="btn-primary">
+            <span>Ver Estatísticas Globais</span>
+        </button>
+    </div>
+
+    <div id="loader">
+        <div class="spinner-mini"></div>
+        <span>Processando dados...</span>
+    </div>
+
+    <div id="modal-stats">
+        <div class="modal-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                <h2 style="margin:0; color: var(--text-main);">Estatísticas Globais</h2>
+                <span id="close-modal" style="cursor:pointer; font-size:24px; color: #94a3b8; transition: color 0.2s;">&times;</span>
+            </div>
+            <div id="stats-content" style="color: var(--text-main);">
+                Carregando...
+            </div>
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-     crossorigin=""></script>
-     <script>
-        
-        var map = L.map('map').setView([-22.9068, -43.1729], 12);
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <script>
+        var map = L.map('map', { zoomControl: false }).setView([-22.9068, -43.1729], 12);
+
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
 
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
-        console.log("Mapa carregado com sucesso!");
-
+        // --- LEGENDA ---
         var legend = L.control({position: 'bottomright'});
-
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend');
-            div.innerHTML += '<i style="background: #3388ff"></i> Rota (Shape)<br>';
-            div.innerHTML += '<i style="background: red; border-radius: 50%"></i> Paradas<br>';
+            div.innerHTML += '<div style="display:flex; align-items:center; gap:5px"><i style="background: #3388ff"></i> Rota (Ida)</div>';
+            div.innerHTML += '<div style="display:flex; align-items:center; gap:5px; margin-top:5px;"><i style="background: #999"></i> Rota (Volta/Variante)</div>';
+            div.innerHTML += '<div style="display:flex; align-items:center; gap:5px; margin-top:5px;"><i style="background: #2563eb; border-radius:50%"></i> Paradas</div>';
             return div;
         };
-
         legend.addTo(map);
+
+        // --- VARIÁVEIS GLOBAIS ---
+        let currentPolylines = [];
+        let currentMarkers = [];
+        let rotasData = [];
 
         document.addEventListener('DOMContentLoaded', () => {
             const select = document.getElementById('seletor-rota');
             const loader = document.getElementById('loader');
+            const btnStats = document.getElementById('btn-stats');
+            const modalStats = document.getElementById('modal-stats');
+            const closeModal = document.getElementById('close-modal');
+            const statsContent = document.getElementById('stats-content');
             const origem = document.getElementById('input-origem');
             const destino = document.getElementById('input-destino');
 
-            if (!select) return;
-
-            let rotasData = [];
-
-            function renderSelect(data) {
-                select.innerHTML = '';
-                if (!Array.isArray(data) || data.length === 0) {
-                    const opt = document.createElement('option');
-                    opt.value = '';
-                    opt.disabled = true;
-                    opt.selected = true;
-                    opt.textContent = 'Nenhuma rota encontrada';
-                    select.appendChild(opt);
-                    return;
-                }
-
-                const defaultOpt = document.createElement('option');
-                defaultOpt.value = '';
-                defaultOpt.disabled = true;
-                defaultOpt.selected = true;
-                defaultOpt.textContent = 'Selecione uma linha...';
-                select.appendChild(defaultOpt);
-
-                data.forEach(item => {
-                    const opt = document.createElement('option');
-                    opt.value = item.id_rota ?? item.id ?? item.codigo ?? item.value ?? '';
-                    opt.textContent = item.nome ?? item.name ?? item.label ?? (typeof item === 'string' ? item : JSON.stringify(item));
-                    select.appendChild(opt);
-                });
+            function openModal() {
+                modalStats.style.display = 'flex';
+                setTimeout(() => modalStats.classList.add('visible'), 10);
             }
+            function closeModalFunc() {
+                modalStats.classList.remove('visible');
+                setTimeout(() => modalStats.style.display = 'none', 300);
+            }
+            closeModal.addEventListener('click', closeModalFunc);
+            modalStats.addEventListener('click', (e) => {
+                if (e.target === modalStats) closeModalFunc();
+            });
 
             async function populateRotas() {
-                select.innerHTML = '<option value="">Carregando rotas...</option>';
-                if (loader) loader.style.display = 'block';
+                select.innerHTML = '<option>Carregando...</option>';
+                if(loader) loader.style.display = 'flex'; 
 
                 try {
                     const res = await fetch('/api/rotas');
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    const data = await res.json();
-
+                    const data = res.ok ? await res.json() : [];
+                    
                     rotasData = Array.isArray(data) ? data : [];
                     renderSelect(rotasData);
+
                 } catch (err) {
-                    console.error('Erro ao carregar rotas:', err);
-                    select.innerHTML = '<option value="">Erro ao carregar rotas</option>';
+                    console.error(err);
+                    select.innerHTML = '<option>Erro ao carregar</option>';
                 } finally {
-                    if (loader) loader.style.display = 'none';
+                    if(loader) loader.style.display = 'none';
                 }
             }
 
+            function renderSelect(data) {
+                select.innerHTML = '<option value="" disabled selected>Selecione uma linha...</option>';
+                if (!data.length) return;
+
+                data.forEach(rota => {
+                    const option = document.createElement('option');
+                    option.value = rota.id || rota.id_rota;
+                    option.textContent = rota.numero ? `${rota.numero} - ${rota.nome}` : rota.nome;
+                    select.appendChild(option);
+                });
+            }
+            
             populateRotas();
 
-            function filterRotas() {
-                const o = (origem?.value || '').trim().toLowerCase();
-                const d = (destino?.value || '').trim().toLowerCase();
+            let timerBusca = null;
 
-                if (!o && !d) {
-                    renderSelect(rotasData);
-                    return;
-                }
+            function filterRotas(e) {
+                const termo = e.target.value.trim(); 
 
-                const filtered = rotasData.filter(item => {
-                    const stops = item.paradas ?? item.stops ?? item.stops_list ?? [];
-                    const stopNames = Array.isArray(stops)
-                        ? stops.map(s => (s.nome ?? s.name ?? s.label ?? '').toString().toLowerCase())
-                        : [];
+                clearTimeout(timerBusca);
 
-                    const routeText = (item.nome ?? item.name ?? item.label ?? '').toString().toLowerCase();
+                timerBusca = setTimeout(async () => {
+                    
+                    if (!termo || termo.length < 3) {
+                        renderSelect(rotasData); 
+                        return;
+                    }
 
-                    const hasOrigem = !o || routeText.includes(o) || stopNames.some(n => n.includes(o));
-                    const hasDestino = !d || routeText.includes(d) || stopNames.some(n => n.includes(d));
+                    select.innerHTML = `<option>🔍 Buscando rotas em "${termo}"...</option>`;
 
-                    return hasOrigem && hasDestino;
-                });
+                    try {
 
-                renderSelect(filtered);
+                        const res = await fetch(`/api/rotas/busca/${encodeURIComponent(termo)}`);
+                        
+                        if (!res.ok) throw new Error("Erro na busca");
+                        
+                        const rotasEncontradas = await res.json();
+
+                        if (rotasEncontradas && rotasEncontradas.length > 0) {
+                            renderSelect(rotasEncontradas);
+                            
+                        } else {
+                            select.innerHTML = '<option disabled>Nenhuma rota passa neste local.</option>';
+                        }
+
+                    } catch (err) {
+                        console.error(err);
+                        renderSelect(rotasData); 
+                    }
+                }, 500); 
             }
 
-            origem?.addEventListener('input', filterRotas);
-            destino?.addEventListener('input', filterRotas);
+            origem.addEventListener('input', filterRotas);
+            destino.addEventListener('input', filterRotas);
 
-            [origem, destino].forEach(el => {
-                el?.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const firstOption = select.querySelector('option:not([disabled])');
-                        if (firstOption && firstOption.value) {
-                            select.value = firstOption.value;
-                            select.dispatchEvent(new Event('change'));
-                        }
-                    }
-                });
-            });
-
-            let currentPolyline = null;
-            let currentMarkers = [];
-            let currentShapeId = null;
+            select.addEventListener('focus', () => { select.size = 0; });
 
             function clearMapDrawings() {
-                if (currentPolyline) {
-                    try { map.removeLayer(currentPolyline); } catch {}
-                    currentPolyline = null;
-                }
-                currentMarkers.forEach(m => {
-                    try { map.removeLayer(m); } catch {}
-                });
+                currentPolylines.forEach(l => map.removeLayer(l));
+                currentPolylines = [];
+                currentMarkers.forEach(m => map.removeLayer(m));
                 currentMarkers = [];
-                // currentShapeId será recalculado em fetchAndDrawShape
             }
 
             async function fetchAndDrawShape(id) {
                 if (!id) return;
-                if (loader) loader.style.display = 'block';
+                loader.style.display = 'flex';
                 clearMapDrawings();
-                currentShapeId = null;
-
-                const candidates = [
-                    `/api/rotas/${encodeURIComponent(id)}/shapes`,
-                    `/api/shape/${encodeURIComponent(id)}`,
-                    `/api/shapes?rota=${encodeURIComponent(id)}`
-                ];
-
-                let data = null;
-                for (const url of candidates) {
-                    try {
-                        console.debug('Tentando', url);
-                        const res = await fetch(url);
-                        console.debug('Status', url, res.status);
-                        if (!res.ok) continue;
-                        data = await res.json();
-                        console.debug('Preview data', data && (Array.isArray(data) ? data.slice(0,3) : Object.keys(data).slice(0,5)));
-                        break;
-                    } catch (err) {
-                        console.warn('fetch falhou para', url, err);
-                    }
-                }
-
-                if (!data) {
-                    console.error('Nenhum shape retornado para a rota', id);
-                    if (loader) loader.style.display = 'none';
-                    return;
-                }
-
-                // objeto {id_shape: [pts]}
-                if (!Array.isArray(data) && typeof data === 'object' && data !== null) {
-                    const entries = Object.entries(data);
-                    currentShapeId = null;
-
-                    for (const [shapeId, pts] of entries) {
-                        if (Array.isArray(pts) && pts.length > 0) {
-                            console.debug('Usando variante de shape:', shapeId);
-                            currentShapeId = shapeId;
-                            data = pts;
-                            break;
-                        }
-                    }
-                } else {
-                    currentShapeId = null;
-                }
-
-                let coords = (Array.isArray(data) ? data : []).map(p => {
-                    if (!p) return null;
-                    if (Array.isArray(p) && p.length >= 2) return normalizePair(p);
-                    const lat = firstDefined(p.shape_pt_lat, p.ponto_lat, p.lat, p.latitude, p.lat_parada, p[0]);
-                    const lon = firstDefined(p.shape_pt_lon, p.ponto_long, p.long, p.lon, p.longitude, p.long_parada, p[1]);
-                    if (lat == null || lon == null) return null;
-                    return [Number(lat), Number(lon)];
-                }).filter(Boolean);
-
-                coords = coords.filter(c => Array.isArray(c) && isFinite(c[0]) && isFinite(c[1]));
-
-                console.debug('Coords normalizadas (exemplo):', coords.length, coords.slice(0,3));
-
-                if (coords.length === 0) {
-                    console.warn('Shape vazio ou formato inesperado para rota', id, data);
-                    if (loader) loader.style.display = 'none';
-                    return;
-                }
-
-                currentPolyline = L.polyline(coords, { color: '#3388ff', weight: 4, opacity: 0.9 }).addTo(map);
-
-                const start = coords[0];
-                const end = coords[coords.length - 1];
-                const startMark = L.circleMarker(start, { radius: 6, color: 'green', fillColor: 'green', fillOpacity: 0.9 }).bindPopup('Início').addTo(map);
-                const endMark = L.circleMarker(end, { radius: 6, color: 'red', fillColor: 'red', fillOpacity: 0.9 }).bindPopup('Fim').addTo(map);
-                currentMarkers.push(startMark, endMark);
 
                 try {
-                    map.fitBounds(currentPolyline.getBounds(), { padding: [40, 40] });
-                } catch (err) {
-                    map.setView(start, 13);
-                }
-
-                if (loader) loader.style.display = 'none';
-                console.log('currentShapeId definido como:', currentShapeId);
-                return currentShapeId;
-            }
-
-            async function fetchAndDrawParadas(id) {
-                if (!id) return;
-                if (loader) loader.style.display = 'block';
-
-                try {
-                    const url = `/api/rotas/${encodeURIComponent(id)}/paradas`;
-                    console.log("Buscando paradas em:", url);
-
-                    const res = await fetch(url);
-                    if (!res.ok) {
-                        console.warn("Nenhuma parada encontrada para a rota:", id);
-                        return;
+                    
+                    let data = null;
+                    const urls = [`/api/rotas/${id}/shapes`, `/api/shape/${id}`];
+                    
+                    for (const url of urls) {
+                        try {
+                            const res = await fetch(url);
+                            if (res.ok) { data = await res.json(); break; }
+                        } catch {}
                     }
 
-                    const json = await res.json();
-                    console.log("Paradas recebidas (por shape):", json);
+                    if (!data) return;
 
-                    let paradas = [];
+                    let paths = [];
 
-                    if (json && typeof json === 'object' && !Array.isArray(json)) {
-                        if (currentShapeId && json[currentShapeId]) {
-                            paradas = json[currentShapeId];
-                            console.log("Usando paradas do shape:", currentShapeId);
-                        } else {
-                            console.warn("currentShapeId não encontrado na resposta. Nada será desenhado para evitar ida+volta misturados.");
-                            return;
+                    if (Array.isArray(data)) paths.push(data);
+                    else if (typeof data === 'object') Object.values(data).forEach(p => paths.push(p));
+
+                    let bounds = L.latLngBounds([]);
+                    
+                    paths.forEach((path, idx) => {
+                        const coords = path.map(p => {
+                            const lat = p.lat || p.ponto_lat || p.latitude;
+                            const lng = p.long || p.ponto_long || p.longitude;
+                            return (lat && lng) ? [parseFloat(lat), parseFloat(lng)] : null;
+                        }).filter(c => c);
+
+                        if (coords.length) {
+                            const poly = L.polyline(coords, {
+                                color: idx === 0 ? '#2563eb' : '#94a3b8', 
+                                weight: idx === 0 ? 5 : 3,
+                                opacity: 0.8
+                            }).addTo(map);
+                            currentPolylines.push(poly);
+                            bounds.extend(poly.getBounds());
                         }
-                    } else if (Array.isArray(json)) {
-                        paradas = json;
-                    }
-
-                    if (!paradas.length) {
-                        console.warn("Nenhuma parada válida após filtragem por shape.");
-                        return;
-                    }
-
-                    paradas.forEach(p => {
-                        const lat = Number(p.lat);
-                        const lng = Number(p.long);
-
-                        if (!isFinite(lat) || !isFinite(lng)) return;
-
-                        const marker = L.marker([lat, lng], {
-                            icon: L.icon({
-                                iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-                                iconSize: [27, 27],
-                                iconAnchor: [13, 27],
-                            })
-                        })
-                        .bindPopup(`<b>${p.nome}</b><br>ID: ${p.id_parada}`)
-                        .addTo(map);
-
-                        currentMarkers.push(marker);
                     });
 
-                } catch (err) {
-                    console.error("Erro ao desenhar paradas:", err);
-                } finally {
-                    if (loader) loader.style.display = 'none';
-                }
+                    if (currentPolylines.length) map.fitBounds(bounds, { padding: [50, 50] });
+
+                } catch (e) { console.error(e); }
+                finally { loader.style.display = 'none'; }
             }
 
-            function firstDefined(...args) {
-                for (const a of args) if (a !== undefined && a !== null) return a;
-                return null;
-            }
-            function normalizePair(pair) {
-                const a = Number(pair[0]);
-                const b = Number(pair[1]);
-                if (!isFinite(a) || !isFinite(b)) return null;
-                if (Math.abs(a) > 90 && Math.abs(b) <= 90) return [b, a];
-                return [a, b];
+   
+            async function fetchAndDrawParadas(id) {
+                if (!id) return;
+                
+                try {
+                    const res = await fetch(`/api/rotas/${id}/paradas`);
+                    if (!res.ok) return;
+                    
+                    const json = await res.json();
+                    let allStops = [];
+
+                    if (Array.isArray(json)) allStops = json;
+                    else if (typeof json === 'object') Object.values(json).forEach(arr => allStops.push(...arr));
+
+                    const unique = {};
+                    allStops.forEach(p => unique[p.id_parada] = p);
+
+                    Object.values(unique).forEach(p => {
+                        const lat = parseFloat(p.lat || p.lat_parada);
+                        const lng = parseFloat(p.long || p.long_parada);
+                        
+                        if (lat && lng) {
+                        
+                            const marker = L.circleMarker([lat, lng], {
+                                radius: 5,
+                                fillColor: 'white',
+                                color: '#2563eb',
+                                weight: 2,
+                                opacity: 1,
+                                fillOpacity: 1
+                            }).bindPopup(`
+                                <div style="font-family:'Inter'">
+                                    <strong style="color:#2563eb">${p.nome}</strong><br>
+                                    <small style="color:#64748b">ID: ${p.id_parada}</small>
+                                </div>
+                            `);
+                            marker.addTo(map);
+                            currentMarkers.push(marker);
+                        }
+                    });
+
+                } catch (e) { console.error(e); }
             }
 
-            // >>> AQUI: garante ordem - primeiro shape, depois paradas <<<
             select.addEventListener('change', async (e) => {
-                const idRota = e.target.value;
-                console.log('Rota selecionada:', idRota);
-                await fetchAndDrawShape(idRota);   // espera definir currentShapeId
-                await fetchAndDrawParadas(idRota); // só então busca/parcela paradas
+                const id = e.target.value;
+                await fetchAndDrawShape(id);
+                await fetchAndDrawParadas(id);
+            });
+
+            btnStats.addEventListener('click', async () => {
+                openModal();
+                statsContent.innerHTML = '<div class="spinner-mini" style="border-color:rgba(0,0,0,0.1); border-top-color:#333; margin:auto"></div>';
+
+                try {
+                    const [resAgencias, resRotas, resMedia] = await Promise.all([
+                        fetch('/api/agencias'),
+                        fetch('/api/rotas/principais'),
+                        fetch('/api/viagens/media_paradas')
+                    ]);
+
+                    const agencias = await resAgencias.json();
+                    const rotas = resRotas.ok ? await resRotas.json() : [];
+                    const media = await resMedia.json();
+
+                    statsContent.innerHTML = `
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px">
+                            <div style="background:#f8fafc; padding:15px; border-radius:8px;">
+                                <h4 style="margin-top:0; color:#64748b">Média do Sistema</h4>
+                                <h2 style="font-size:32px; margin:5px 0; color:var(--primary)">${media.media_paradas_por_viagem || 0}</h2>
+                                <small>paradas por viagem</small>
+                            </div>
+                            <div style="background:#f8fafc; padding:15px; border-radius:8px;">
+                                <h4 style="margin-top:0; color:#64748b">Total Agências</h4>
+                                <h2 style="font-size:32px; margin:5px 0; color:var(--text-main)">${agencias.length}</h2>
+                                <small>operando ativamente</small>
+                            </div>
+                        </div>
+
+                        <h3 style="margin-top:30px; border-bottom:1px solid #eee; padding-bottom:10px;">Rotas Mais Longas</h3>
+                        <table style="width:100%; text-align:left; border-collapse:collapse; font-size:14px;">
+                            <thead style="color:#64748b;">
+                                <tr><th style="padding:10px 0">Linha</th><th>Nome</th><th>Paradas</th></tr>
+                            </thead>
+                            <tbody>
+                                ${rotas.slice(0, 5).map(r => `
+                                    <tr style="border-bottom:1px solid #f1f1f1">
+                                        <td style="padding:10px 0; font-weight:bold">${r.linha}</td>
+                                        <td>${r.nome_rota}</td>
+                                        <td><span style="background:#dbeafe; color:#1e40af; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:600">${r.media_paradas}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+
+                } catch (e) {
+                    statsContent.innerHTML = `<p style="color:red">Erro ao carregar dados: ${e.message}</p>`;
+                }
             });
         });
+        
+        function firstDefined(...args) { return args.find(a => a !== undefined && a !== null); }
     </script>
-
 </body>
 </html>

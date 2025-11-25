@@ -178,37 +178,31 @@ def get_shape_by_route(id_rota):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@api_bp.route('rotas/<id_parada>')
-def get_rota_by_parada(id_parada):
-    sql = text("""SELECT * 
-               FROM Rota R
-               WHERE R.id_rota IN (
-                    SELECT 
-                        V.id_rota 
-                    FROM Viagem V 
-                    WHERE V.id_viagem IN (
-                        SELECT P.id_viagem 
-                        FROM Passa_por P 
-                        WHERE P.id_parada = :id))
+@api_bp.route('rotas/busca/<nome>') 
+def buscar_rotas_por_ponto(nome):
+    sql = text("""
+        SELECT DISTINCT R.* FROM Rota R
+        JOIN Viagem V ON R.id_rota = V.id_rota
+        JOIN Passa_por PP ON V.id_viagem = PP.id_viagem
+        JOIN Parada P ON PP.id_parada = P.id_parada
+        WHERE P.nome LIKE :nome
     """)
 
     try:
-        result = db.session.execute(sql,{'id': id_parada})
+        search_term = f"%{nome}%"
+        result = db.session.execute(sql, {'nome': search_term})
 
         rotas = []
-
         for row in result:
-
             rotas.append({
                 "id": row.id_rota,
                 "nome": row.nome,
                 "numero": row.onibus,
-                "id_agencia": row.id_agencia,
-                "is_brt": bool(row.modal_rota)
+                "id_agencia": row.id_agencia
             })
 
         if not rotas:
-            return jsonify({"message": "Parada not found"}), 404
+            return jsonify([]) 
 
         return jsonify(rotas)
 
