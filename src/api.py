@@ -355,6 +355,7 @@ def get_media_paradas_por_viagem():
 def get_paradas_by_rota(id_rota):
     sql = text("""
         SELECT
+            v.id_shape,
             p.id_parada,
             p.nome,
             p.lat_parada,
@@ -364,26 +365,51 @@ def get_paradas_by_rota(id_rota):
         JOIN Passa_por pp ON p.id_parada = pp.id_parada
         JOIN Viagem v ON pp.id_viagem = v.id_viagem
         WHERE v.id_rota = :id
-        GROUP BY p.id_parada, p.nome, p.lat_parada, p.long_parada
-        ORDER BY primeiro_indice ASC
+        GROUP BY v.id_shape, p.id_parada, p.nome, p.lat_parada, p.long_parada
+        ORDER BY v.id_shape, primeiro_indice ASC
     """)
     try:
         result = db.session.execute(sql, {'id': id_rota})
 
-        paradas = []
+        paradas_por_shape = {}
+
         for row in result:
-            paradas.append({
+            shape_id = row.id_shape
+            if shape_id not in paradas_por_shape:
+                paradas_por_shape[shape_id] = []
+
+            paradas_por_shape[shape_id].append({
                 "id_parada": row.id_parada,
                 "nome": row.nome,
                 "lat": float(row.lat_parada),
-                "long": float(row.long_parada), 
+                "long": float(row.long_parada),
                 "primeiro_indice": int(row.primeiro_indice)
             })
 
-        if not paradas:
+        if not paradas_por_shape:
             return jsonify({"message": "Nenhuma parada encontrada para essa rota"}), 404
 
-        return jsonify(paradas)
+        return jsonify(paradas_por_shape)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@api_bp.route('/rotas/<id_rota>/viagens')
+def get_viagens_da_rota(id_rota):
+    sql = text("""
+        SELECT
+            id_viagem,
+            id_shape
+        FROM Viagem
+        WHERE id_rota = :id
+    """)
+    result = db.session.execute(sql, {'id': id_rota})
+
+    viagens = []
+    for row in result:
+        viagens.append({
+            "id_viagem": row.id_viagem,
+            "id_shape": row.id_shape
+        })
+
+    return jsonify(viagens)
