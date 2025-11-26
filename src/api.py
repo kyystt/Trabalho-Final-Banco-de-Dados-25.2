@@ -1,13 +1,15 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from sqlalchemy import text
-
 # DB from project
 from src.extensions import db
 
 api_bp = Blueprint('api', __name__)
 
+# Busca os dados detalhados de uma parada específica pelo seu ID.
 @api_bp.route('/paradas/<id_parada>')
 def get_parada(id_parada):
+    # REQUISITO ATENDIDO:
+    # - Consulta Simples: (SELECT básico)
     sql = text("SELECT * FROM Parada WHERE id_parada = :id")
     result = db.session.execute(sql, {'id': id_parada})
 
@@ -18,8 +20,43 @@ def get_parada(id_parada):
     else:
         return jsonify({"error": "Parada not found"}), 404
 
+# Retorna apenas as rotas do tipo BRT que possuem viagens cadastradas.
+@api_bp.route('/rotas/brt')
+def get_rotas_brt():
+    # REQUISITO ATENDIDO: 
+    # - Subconsulta aninhada: Uso de subquery no WHERE com operador IN
+    sql = text("""
+        SELECT * FROM Rota r
+        WHERE r.modal_rota = 1
+        AND r.id_rota IN (
+            SELECT DISTINCT id_rota 
+            FROM Viagem
+        )
+    """)
+
+    try:
+        result = db.session.execute(sql)
+        rotas = []
+        for row in result:
+            rotas.append({
+                "id": row.id_rota,
+                "nome": row.nome,
+                "numero": row.onibus,
+                "id_agencia": row.id_agencia
+            })
+            
+        if not rotas:
+            return jsonify([])
+            
+        return jsonify(rotas)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Retorna informações detalhadas de uma viagem (agência, linha, letreiro e ponto final).
 @api_bp.route('viagens/<id_viagem>')
 def get_viagem_detalhes(id_viagem):
+    # REQUISITO ATENDIDO: 
+    # - Mais de uma junção: (Viagem -> Rota -> Agencia -> Passa_por -> Parada)
     sql = text("""
         SELECT
             A.nome AS nome_agencia,
@@ -59,9 +96,13 @@ def get_viagem_detalhes(id_viagem):
     except Exception as e:
         return jsonify({"message": str(e)}), 500
 
+# Lista as rotas "longas", cujo número de paradas é superior à média global do sistema.
 @api_bp.route('rotas/principais')
 def get_rotas_principais():
-
+    # REQUISITOS ATENDIDOS
+    # - Mais de uma junção: (Rota + Viagem + CTE)
+    # - Agregação: (COUNT, AVG) e Agrupamento: (GROUP BY)
+    # - Subconsulta aninhada: (no HAVING e via CTEs)
     sql = text("""
         WITH StatsViagem AS (
             SELECT id_viagem, COUNT(id_parada) as qtd
@@ -105,8 +146,11 @@ def get_rotas_principais():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Retorna a lista ordenada de paradas (itinerário) de uma viagem específica.
 @api_bp.route('/viagens/<id_viagem>/paradas')
 def get_itinerario(id_viagem):
+    # REQUISITO ATENDIDO: 
+    # - Operação de Junção: Join simples entre Passa_por -> Parada
     sql = text("""
         SELECT
             p.lat_parada,
@@ -140,8 +184,11 @@ def get_itinerario(id_viagem):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Busca o traçado geográfico (coordenadas lat/long) de uma rota específica.
 @api_bp.route('/rotas/<id_rota>/shapes')
 def get_shape_by_route(id_rota):
+    # REQUISITO ATENDIDO: 
+    # - Mais de uma junção: Junção entre Viagem -> Rota -> Shape
     sql = text("""
         SELECT DISTINCT
             S.id_shape,
@@ -178,15 +225,26 @@ def get_shape_by_route(id_rota):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Pesquisa quais rotas passam por uma parada que contenha o nome informado (com filtro opcional de BRT).
 @api_bp.route('rotas/busca/<nome>') 
 def buscar_rotas_por_ponto(nome):
-    sql = text("""
+
+    only_brt = request.args.get('brt', 'false').lower() == 'true'
+
+    # REQUISITO ATENDIDO: 
+    # - Mais de uma junção: Junção entre Rota, Viagem, Passa_por e Parada
+    sql_query = """
         SELECT DISTINCT R.* FROM Rota R
         JOIN Viagem V ON R.id_rota = V.id_rota
         JOIN Passa_por PP ON V.id_viagem = PP.id_viagem
         JOIN Parada P ON PP.id_parada = P.id_parada
         WHERE P.nome LIKE :nome
-    """)
+    """
+
+    if only_brt:
+        sql_query += " AND R.modal_rota = 1"
+
+    sql = text(sql_query)
 
     try:
         search_term = f"%{nome}%"
@@ -209,8 +267,11 @@ def buscar_rotas_por_ponto(nome):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Busca o traçado geográfico associado a uma viagem específica (instância da rota).
 @api_bp.route('shape/<id_viagem>')
 def get_shape_by_viagem(id_viagem):
+    # REQUISITO ATENDIDO: 
+    # Operação de Junção: Join simples entre Shape e Viagem
     sql = text("""SELECT
                     S.id_shape, 
                     S.ponto_lat,
@@ -242,8 +303,12 @@ def get_shape_by_viagem(id_viagem):
     except Exception as e:
         return jsonify({"error": str(e)}), 500    
 
+# Lista todas as agências e a quantidade total de rotas que cada uma opera.
 @api_bp.route('agencias')
 def get_agencias_overview():
+    # REQUISITOS ATENDIDOS:
+    # - Junção Externa (LEFT JOIN)
+    # - Agregação (COUNT) e Agrupamento (GROUP BY)
     sql = text("""
         SELECT 
             A.id_agencia,
@@ -274,9 +339,11 @@ def get_agencias_overview():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
+# Retorna uma lista simples com todas as rotas cadastradas no sistema.    
 @api_bp.route('rotas')
 def get_rotas_overview():
+    # Consulta Simples para listagem
     sql = text("SELECT * FROM Rota")
 
     try:
@@ -300,9 +367,13 @@ def get_rotas_overview():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+        
+# Conta quantos pontos de coordenadas (GPS) existem no traçado de uma viagem.
 @api_bp.route('/viagens/<id_viagem>/pontos_shape_count')
 def get_viagens_pontos_shape_count(id_viagem):
+    # REQUISITOS ATENDIDOS:
+    # - Junção Externa (LEFT JOIN)
+    # - Agregação (COUNT) e Agrupamento (GROUP BY)
     sql = text("""
         SELECT 
             V.id_viagem,
@@ -327,9 +398,13 @@ def get_viagens_pontos_shape_count(id_viagem):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
+# Calcula a média geral de paradas por viagem em todo o sistema.
 @api_bp.route('/viagens/media_paradas')
 def get_media_paradas_por_viagem():
+    # REQUISITOS ATENDIDOS:
+    # - Agregação (AVG, COUNT)
+    # - Subconsulta aninhada (SELECT no FROM)
     sql = text("""
         SELECT AVG(cnt) AS media_paradas FROM (
             SELECT COUNT(*) AS cnt
@@ -344,9 +419,13 @@ def get_media_paradas_por_viagem():
         return jsonify({"media_paradas_por_viagem": round(media, 2)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
+# Retorna todas as paradas de uma rota, agrupadas pelo ID do traçado (shape).
 @api_bp.route('/rotas/<id_rota>/paradas')
 def get_paradas_by_rota(id_rota):
+    # REQUISITOS ATENDIDOS:
+    # - Mais de uma junção (Parada -> Passa_por -> Viagem)
+    # - Agregação (MIN) e Agrupamento (GROUP BY)
     sql = text("""
         SELECT
             v.id_shape,
@@ -388,8 +467,11 @@ def get_paradas_by_rota(id_rota):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Lista os IDs de todas as viagens associadas a uma rota específica.
 @api_bp.route('/rotas/<id_rota>/viagens')
 def get_viagens_da_rota(id_rota):
+    # REQUISITO ATENDIDO:
+    # - Consulta Simples
     sql = text("""
         SELECT
             id_viagem,
