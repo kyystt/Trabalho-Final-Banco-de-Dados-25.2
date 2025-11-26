@@ -202,7 +202,14 @@
         <label style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: -10px;">FILTRAR</label>
         <input id="input-origem" type="text" placeholder="Origem...">
         <input id="input-destino" type="text" placeholder="Destino...">
-        
+                
+		<div style="display:flex; align-items:center; gap:8px; margin-top:10px; margin-bottom: 5px;">
+		    <input type="checkbox" id="check-brt" style="width:auto; cursor:pointer;">
+		    <label for="check-brt" style="font-size:14px; color:#1e293b; cursor:pointer; font-weight:500;">
+		        Apenas linhas BRT
+		    </label>
+		</div>
+                        
         <label style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: -10px;">SELECIONAR ROTA</label>
         <select id="seletor-rota">
             <option value="" disabled selected>Escolha uma linha...</option>
@@ -268,6 +275,22 @@
             const statsContent = document.getElementById('stats-content');
             const origem = document.getElementById('input-origem');
             const destino = document.getElementById('input-destino');
+            const checkBrt = document.getElementById('check-brt');
+
+            
+            checkBrt.addEventListener('change', (e) => {
+                // Limpa os filtros de texto para não confundir
+                document.getElementById('input-origem').value = '';
+                document.getElementById('input-destino').value = '';
+            
+                if (e.target.checked) {
+                    // Se marcado, chama a rota com Subquery (Requisito SQL)
+                    populateRotas('/api/rotas/brt');
+                } else {
+                    // Se desmarcado, busca todas as rotas novamente
+                    populateRotas('/api/rotas');
+                }
+            });
 
             function openModal() {
                 modalStats.style.display = 'flex';
@@ -282,24 +305,31 @@
                 if (e.target === modalStats) closeModalFunc();
             });
 
-            async function populateRotas() {
-                select.innerHTML = '<option>Carregando...</option>';
-                if(loader) loader.style.display = 'flex'; 
-
-                try {
-                    const res = await fetch('/api/rotas');
-                    const data = res.ok ? await res.json() : [];
-                    
-                    rotasData = Array.isArray(data) ? data : [];
-                    renderSelect(rotasData);
-
-                } catch (err) {
-                    console.error(err);
-                    select.innerHTML = '<option>Erro ao carregar</option>';
-                } finally {
-                    if(loader) loader.style.display = 'none';
-                }
-            }
+            async function populateRotas(url = '/api/rotas') {
+                            select.innerHTML = '<option>Carregando...</option>';
+                            if(loader) loader.style.display = 'flex'; 
+            
+                            try {
+                                const res = await fetch(url); 
+                                const data = res.ok ? await res.json() : [];
+                                
+                                rotasData = Array.isArray(data) ? data : [];
+                                
+                                if (rotasData.length === 0) {
+                                     select.innerHTML = '<option disabled selected>Nenhuma rota encontrada</option>';
+                                } else {
+                                     renderSelect(rotasData);
+                                }
+            
+                            } catch (err) {
+                                console.error(err);
+                                select.innerHTML = '<option>Erro ao carregar</option>';
+                            } finally {
+                                if(loader) loader.style.display = 'none';
+                            }
+                        }
+            
+            populateRotas();
 
             function renderSelect(data) {
                 select.innerHTML = '<option value="" disabled selected>Selecione uma linha...</option>';
@@ -312,8 +342,6 @@
                     select.appendChild(option);
                 });
             }
-            
-            populateRotas();
 
             let timerBusca = null;
 
@@ -333,7 +361,11 @@
 
                     try {
 
-                        const res = await fetch(`/api/rotas/busca/${encodeURIComponent(termo)}`);
+                    	const isBrtOnly = document.getElementById('check-brt').checked;
+                                            
+                        const queryParam = isBrtOnly ? '?brt=true' : '';
+
+                        const res = await fetch(`/api/rotas/busca/${encodeURIComponent(termo)}${queryParam}`);
                         
                         if (!res.ok) throw new Error("Erro na busca");
                         
